@@ -17,7 +17,7 @@ Chạy trên máy thật ngày 31/08/2026. Chi tiết bài test ở [ios-smokete
 | Độ trễ | ✅ **~1 giây** |
 | Tiếng Việt có dấu | ✅ Hiển thị đúng |
 | Nhiều noti liên tiếp có bị gộp? | ✅ **Không** — 5/5 lần rung, tới nhau ngay |
-| Do Not Disturb có chặn? | ⏳ chưa đo |
+| Do Not Disturb có chặn? | ⏭ Bỏ qua theo quyết định — nếu đang chạy xe mà đồng hồ bỗng im, nghi phạm đầu tiên là Focus "Đang lái xe" tự bật |
 | Emoji (🏁) | ✅ Hiển thị được |
 | Ký tự mũi tên `↰ ↱ ↑` | ⚠️ **Chập chờn** — lúc hiện lúc bị nuốt, không ra ô vuông. Không được dựa vào nó |
 | Chuỗi dài | ✅ Xuống dòng theo từ, hiện gần đủ — thoải mái cho nhu cầu |
@@ -26,9 +26,9 @@ Chạy trên máy thật ngày 31/08/2026. Chi tiết bài test ở [ios-smokete
 trễ 1 giây thì bắn noti ở 150 m trước ngã rẽ là thừa kịp (chạy 40 km/h chỉ lệch
 khoảng 12 m).
 
-## Bước tiếp theo
+## App chính
 
-Viết app chính:
+Đang viết tại [ios-app/](ios-app/README.md) — hướng dẫn lấy Google API key và dựng project nằm trong đó. Kiến trúc:
 
 - **Routing** — Google Directions API (`language=vi`), lấy từng step kèm maneuver và toạ độ
 - **Chạy nền** — `CLLocationManager` với `allowsBackgroundLocationUpdates`,
