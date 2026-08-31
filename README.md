@@ -30,7 +30,7 @@ khoảng 12 m).
 
 Đang viết tại [ios-app/](ios-app/README.md) — hướng dẫn lấy Google API key và dựng project nằm trong đó. Kiến trúc:
 
-- **Routing** — Google Directions API (`language=vi`), lấy từng step kèm maneuver và toạ độ
+- **Routing** — Apple Maps (MapKit): miễn phí, không key. Bản Google Routes API viết sẵn trong repo, cắm key là đổi nguồn được
 - **Chạy nền** — `CLLocationManager` với `allowsBackgroundLocationUpdates`,
   `activityType = .automotiveNavigation`; background mode `location` cho app sống
   vô thời hạn khi bỏ túi

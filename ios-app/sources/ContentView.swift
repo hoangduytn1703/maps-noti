@@ -2,8 +2,6 @@ import CoreLocation
 import SwiftUI
 
 struct ContentView: View {
-    @AppStorage("googleAPIKey") private var apiKey = ""
-
     @StateObject private var engine = NavigationEngine()
     @StateObject private var notifier = Notifier()
 
@@ -13,6 +11,8 @@ struct ContentView: View {
     @State private var route: Route?
     @State private var busy = false
     @State private var errorText: String?
+
+    private let api = AppleAPI()
 
     var body: some View {
         NavigationStack {
@@ -24,7 +24,6 @@ struct ContentView: View {
                     if let selected, let route {
                         routeSection(selected, route)
                     }
-                    keySection
                 }
 
                 if let errorText {
@@ -64,7 +63,7 @@ struct ContentView: View {
     // MARK: - Tìm điểm đến
 
     private var searchSection: some View {
-        Section("Đi đâu?") {
+        Section {
             HStack {
                 TextField("Tên địa điểm…", text: $query)
                     .onSubmit(search)
@@ -72,7 +71,7 @@ struct ContentView: View {
                     .disabled(query.trimmingCharacters(in: .whitespaces).isEmpty || busy)
             }
             if busy {
-                HStack { ProgressView(); Text("Đang hỏi Google…").foregroundStyle(.secondary) }
+                HStack { ProgressView(); Text("Đang tìm…").foregroundStyle(.secondary) }
             }
             ForEach(results) { place in
                 Button {
@@ -84,6 +83,10 @@ struct ContentView: View {
                     }
                 }
             }
+        } header: {
+            Text("Đi đâu?")
+        } footer: {
+            Text("Quyền thông báo: \(notifier.authStatus) · GPS: \(engine.lastLocation == nil ? "đang bắt…" : "sẵn sàng")")
         }
     }
 
@@ -92,17 +95,14 @@ struct ContentView: View {
         results = []
         selected = nil
         route = nil
-        guard !apiKey.isEmpty else {
-            errorText = "Chưa có API key — kéo xuống mục Cài đặt dán vào."
-            return
-        }
         let text = query.trimmingCharacters(in: .whitespaces)
         guard !text.isEmpty else { return }
         busy = true
         Task {
             defer { busy = false }
             do {
-                results = try await GoogleAPI(apiKey: apiKey).searchPlaces(text)
+                results = try await api.searchPlaces(text, near: engine.lastLocation)
+                if results.isEmpty { errorText = "Không tìm thấy chỗ nào tên vậy." }
             } catch {
                 errorText = error.localizedDescription
             }
@@ -122,8 +122,7 @@ struct ContentView: View {
         Task {
             defer { busy = false }
             do {
-                route = try await GoogleAPI(apiKey: apiKey)
-                    .computeRoute(from: here, to: place.coordinate)
+                route = try await api.computeRoute(from: here, to: place.coordinate)
             } catch {
                 errorText = error.localizedDescription
                 selected = nil
@@ -151,28 +150,11 @@ struct ContentView: View {
     }
 
     private func startNavigation(to place: Place, route: Route) {
-        let key = apiKey
         let dest = place.coordinate
-        engine.reroute = { here in
-            try? await GoogleAPI(apiKey: key).computeRoute(from: here, to: dest)
+        engine.reroute = { [api] here in
+            try? await api.computeRoute(from: here, to: dest)
         }
         engine.start(route: route)
-    }
-
-    // MARK: - API key
-
-    private var keySection: some View {
-        Section {
-            SecureField("Dán Google API key vào đây", text: $apiKey)
-                .autocorrectionDisabled()
-                .textInputAutocapitalization(.never)
-        } header: {
-            Text("Cài đặt")
-        } footer: {
-            Text(apiKey.isEmpty
-                 ? "Cần API key của Google Maps Platform (bật Places API (New) và Routes API). Key lưu trên máy, chỉ gửi tới Google."
-                 : "Đã có key (\(apiKey.count) ký tự). Quyền thông báo: \(notifier.authStatus).")
-        }
     }
 
     // MARK: - Nhật ký
