@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Info.plist cho target Share Extension (tên gợi ý: ShareToMapsNoti).
+
+  Hai điểm khác bản Xcode sinh sẵn:
+  - Bỏ NSExtensionMainStoryboard, thay bằng NSExtensionPrincipalClass →
+    không cần storyboard, extension chạy thẳng ShareViewController.
+  - NSExtensionActivationRule nhận 1 link web hoặc text, nên MapsNoti chỉ
+    hiện trong bảng Chia sẻ khi thứ được chia sẻ thật sự là link.
+-->
+<plist version="1.0">
+<dict>
+    <key>NSExtension</key>
+    <dict>
+        <key>NSExtensionAttributes</key>
+        <dict>
+            <key>NSExtensionActivationRule</key>
+            <dict>
+                <key>NSExtensionActivationSupportsWebURLWithMaxCount</key>
+                <integer>1</integer>
+                <key>NSExtensionActivationSupportsText</key>
+                <true/>
+            </dict>
+        </dict>
+        <key>NSExtensionPointIdentifier</key>
+        <string>com.apple.share-services</string>
+        <key>NSExtensionPrincipalClass</key>
+        <string>$(PRODUCT_MODULE_NAME).ShareViewController</string>
+    </dict>
+</dict>
+</plist>

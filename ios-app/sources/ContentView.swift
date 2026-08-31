@@ -48,6 +48,15 @@ struct ContentView: View {
                 notifier?.fire(title: title, body: body)
             }
         }
+        .onOpenURL { url in
+            // Share Extension gọi sang: mapsnoti://route?link=<đã mã hoá>
+            guard url.scheme == "mapsnoti",
+                  let comps = URLComponents(url: url, resolvingAgainstBaseURL: false),
+                  let link = comps.queryItems?.first(where: { $0.name == "link" })?.value,
+                  !link.isEmpty else { return }
+            if engine.isNavigating { engine.stop(silent: true) }
+            handlePasted(link)
+        }
         .alert("Lưu địa điểm", isPresented: $showSaveAlert) {
             TextField("Tên gợi nhớ (Nhà, Công ty…)", text: $labelInput)
             Button("Lưu") {
