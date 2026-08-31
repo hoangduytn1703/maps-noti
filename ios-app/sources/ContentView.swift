@@ -153,6 +153,10 @@ struct ContentView: View {
 
             searchBar
 
+            if !pickingOrigin {
+                pasteRow
+            }
+
             if let errorText {
                 Text(errorText)
                     .font(.caption)
@@ -228,6 +232,28 @@ struct ContentView: View {
         }
         .padding(12)
         .background(RoundedRectangle(cornerRadius: 13).fill(.gray.opacity(0.15)))
+    }
+
+    /// Dán link từ app Google Maps — mượn kho địa điểm của Google mà
+    /// không cần API key hay billing.
+    private var pasteRow: some View {
+        HStack(spacing: 10) {
+            PasteButton(payloadType: String.self) { items in
+                guard let first = items.first else { return }
+                Task { @MainActor in handlePasted(first) }
+            }
+            .labelStyle(.iconOnly)
+            .buttonBorderShape(.capsule)
+
+            VStack(alignment: .leading, spacing: 1) {
+                Text("Dán link Google Maps")
+                    .font(.caption)
+                Text("Trong Google Maps: Chia sẻ → Sao chép liên kết")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+        }
     }
 
     private var resultsList: some View {
@@ -389,6 +415,23 @@ struct ContentView: View {
                 results = try await api.searchPlaces(text, near: engine.lastLocation)
                 if results.isEmpty { errorText = "Không tìm thấy chỗ nào tên vậy." }
             } catch {
+                errorText = error.localizedDescription
+            }
+        }
+    }
+
+    private func handlePasted(_ text: String) {
+        errorText = nil
+        results = []
+        query = ""
+        busy = true
+        Task {
+            do {
+                let place = try await PlaceLink.parse(text)
+                busy = false
+                choose(place)
+            } catch {
+                busy = false
                 errorText = error.localizedDescription
             }
         }
