@@ -1,11 +1,18 @@
 import CoreLocation
 import MapKit
 import SwiftUI
+import UIKit
 
 struct ContentView: View {
+    @Environment(\.scenePhase) private var scenePhase
+
     @StateObject private var engine = NavigationEngine()
     @StateObject private var notifier = Notifier()
     @StateObject private var favorites = FavoritesStore()
+
+    /// Clipboard đang chứa link web? (kiểm tra bằng detectPatterns —
+    /// không đọc nội dung nên không hiện hộp xin quyền)
+    @State private var clipboardHasLink = false
 
     @Namespace private var mapScope
 
@@ -47,6 +54,12 @@ struct ContentView: View {
             engine.notify = { [weak notifier] title, body in
                 notifier?.fire(title: title, body: body)
             }
+            checkClipboard()
+        }
+        .onChange(of: scenePhase) { _, phase in
+            // Quay lại app (vd: vừa bấm icon MapsNoti trong bảng Chia sẻ,
+            // extension đã chép link vào clipboard) → soi lại clipboard.
+            if phase == .active { checkClipboard() }
         }
         .onOpenURL { url in
             // Share Extension gọi sang: mapsnoti://route?link=<đã mã hoá>
@@ -244,25 +257,35 @@ struct ContentView: View {
     }
 
     /// Dán link từ app Google Maps — mượn kho địa điểm của Google mà
-    /// không cần API key hay billing.
+    /// không cần API key hay billing. Khi clipboard đang có link web,
+    /// hàng này sáng xanh lên mời bấm.
     private var pasteRow: some View {
         HStack(spacing: 10) {
             PasteButton(payloadType: String.self) { items in
                 guard let first = items.first else { return }
                 Task { @MainActor in handlePasted(first) }
             }
-            .labelStyle(.iconOnly)
+            .labelStyle(clipboardHasLink ? .titleAndIcon : .iconOnly)
             .buttonBorderShape(.capsule)
+            .tint(.blue)
 
             VStack(alignment: .leading, spacing: 1) {
-                Text("Dán link Google Maps")
-                    .font(.caption)
-                Text("Trong Google Maps: Chia sẻ → Sao chép liên kết")
+                Text(clipboardHasLink
+                     ? "Có link vừa chép — bấm nút dán để đi"
+                     : "Dán link Google Maps")
+                    .font(clipboardHasLink ? .subheadline.bold() : .caption)
+                    .foregroundStyle(clipboardHasLink ? .blue : .primary)
+                Text("Google Maps: Chia sẻ → icon MapsNoti (hoặc Sao chép liên kết)")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
             Spacer()
         }
+        .padding(clipboardHasLink ? 10 : 0)
+        .background(
+            RoundedRectangle(cornerRadius: 13)
+                .fill(clipboardHasLink ? Color.blue.opacity(0.1) : Color.clear)
+        )
     }
 
     private var resultsList: some View {
@@ -429,10 +452,25 @@ struct ContentView: View {
         }
     }
 
+    /// Soi clipboard có link web không — detectPatterns chỉ trả lời có/không,
+    /// không đọc nội dung, nên không kích hoạt hộp xin quyền dán của iOS.
+    private func checkClipboard() {
+        UIPasteboard.general.detectPatterns(for: [.probableWebURL]) { result in
+            Task { @MainActor in
+                if case .success(let patterns) = result {
+                    clipboardHasLink = patterns.contains(.probableWebURL)
+                } else {
+                    clipboardHasLink = false
+                }
+            }
+        }
+    }
+
     private func handlePasted(_ text: String) {
         errorText = nil
         results = []
         query = ""
+        clipboardHasLink = false
         busy = true
         Task {
             do {
