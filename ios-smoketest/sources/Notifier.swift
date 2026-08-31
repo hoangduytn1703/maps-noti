@@ -7,8 +7,8 @@ import UserNotifications
 @MainActor
 final class Notifier: NSObject, ObservableObject {
 
-    @Published private(set) var authStatus = "chưa kiểm tra"
-    @Published private(set) var log: [String] = []
+    @Published var authStatus = "chưa kiểm tra"
+    @Published var log: [String] = []
 
     private let center = UNUserNotificationCenter.current()
 
@@ -22,29 +22,25 @@ final class Notifier: NSObject, ObservableObject {
     // MARK: - Quyền
 
     func requestPermission() {
-        center.requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
-            Task { @MainActor in
-                if let error {
-                    self.append("❌ xin quyền lỗi: \(error.localizedDescription)")
-                }
-                self.append(granted ? "✅ đã cấp quyền" : "⛔️ bị từ chối quyền")
-                self.refreshStatus()
+        Task {
+            do {
+                let granted = try await center.requestAuthorization(options: [.alert, .sound, .badge])
+                append(granted ? "✅ đã cấp quyền" : "⛔️ bị từ chối quyền")
+            } catch {
+                append("❌ xin quyền lỗi: \(error.localizedDescription)")
             }
+            await refreshStatus()
         }
     }
 
-    func refreshStatus() {
-        center.getNotificationSettings { settings in
-            let text: String
-            switch settings.authorizationStatus {
-            case .authorized:    text = "đã cấp"
-            case .denied:        text = "bị từ chối"
-            case .notDetermined: text = "chưa hỏi"
-            case .provisional:   text = "tạm thời (im lặng)"
-            case .ephemeral:     text = "ephemeral"
-            @unknown default:    text = "không rõ"
-            }
-            Task { @MainActor in self.authStatus = text }
+    func refreshStatus() async {
+        switch await center.notificationSettings().authorizationStatus {
+        case .authorized:    authStatus = "đã cấp"
+        case .denied:        authStatus = "bị từ chối"
+        case .notDetermined: authStatus = "chưa hỏi"
+        case .provisional:   authStatus = "tạm thời (im lặng)"
+        case .ephemeral:     authStatus = "ephemeral"
+        @unknown default:    authStatus = "không rõ"
         }
     }
 
@@ -66,15 +62,13 @@ final class Notifier: NSObject, ObservableObject {
                                             content: content,
                                             trigger: trigger)
 
-        center.add(request) { error in
-            Task { @MainActor in
-                if let error {
-                    self.append("❌ \(title): \(error.localizedDescription)")
-                } else if delay > 0 {
-                    self.append("⏱ hẹn \(Int(delay))s — \(title)")
-                } else {
-                    self.append("📤 gửi ngay — \(title)")
-                }
+        Task {
+            do {
+                try await center.add(request)
+                append(delay > 0 ? "⏱ hẹn \(Int(delay))s — \(title)"
+                                 : "📤 gửi ngay — \(title)")
+            } catch {
+                append("❌ \(title): \(error.localizedDescription)")
             }
         }
     }

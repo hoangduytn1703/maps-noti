@@ -72,7 +72,7 @@ struct ContentView: View {
             }
             .navigationTitle("Noti Smoke Test")
         }
-        .task { notifier.refreshStatus() }
+        .task { await notifier.refreshStatus() }
     }
 }
 
