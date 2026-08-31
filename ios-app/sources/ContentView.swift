@@ -7,9 +7,14 @@ struct ContentView: View {
     @StateObject private var notifier = Notifier()
     @StateObject private var favorites = FavoritesStore()
 
+    @Namespace private var mapScope
+
     @State private var camera: MapCameraPosition = .userLocation(fallback: .automatic)
     @State private var query = ""
     @State private var results: [Place] = []
+    /// Điểm xuất phát tuỳ chọn — nil nghĩa là "vị trí của tôi".
+    @State private var origin: Place?
+    @State private var pickingOrigin = false
     @State private var selected: Place?
     @State private var route: Route?
     @State private var busy = false
@@ -28,6 +33,18 @@ struct ContentView: View {
                 navigationOverlay
             } else {
                 bottomPanel
+            }
+        }
+        .mapScope(mapScope)
+        .overlay(alignment: .topTrailing) {
+            // Nút vị trí + la bàn: tự đặt để không dính sát mép trên.
+            if !engine.isNavigating {
+                VStack(spacing: 10) {
+                    MapUserLocationButton(scope: mapScope)
+                    MapCompass(scope: mapScope)
+                }
+                .padding(.top, 72)
+                .padding(.trailing, 14)
             }
         }
         .task {
@@ -58,19 +75,19 @@ struct ContentView: View {
     }
 
     private var mapLayer: some View {
-        Map(position: $camera) {
+        Map(position: $camera, scope: mapScope) {
             UserAnnotation()
             if routeLine.count > 1 {
                 MapPolyline(coordinates: routeLine)
                     .stroke(.blue, lineWidth: 6)
             }
+            if let origin {
+                Marker(origin.name, coordinate: origin.coordinate)
+                    .tint(.green)
+            }
             if let selected {
                 Marker(selected.name, coordinate: selected.coordinate)
             }
-        }
-        .mapControls {
-            MapUserLocationButton()
-            MapCompass()
         }
     }
 
@@ -103,9 +120,7 @@ struct ContentView: View {
             Spacer()
 
             Button {
-                engine.stop()
-                route = nil
-                selected = nil
+                stopEverything()
             } label: {
                 Text("Kết thúc")
                     .font(.headline)
@@ -122,6 +137,10 @@ struct ContentView: View {
 
     private var bottomPanel: some View {
         VStack(spacing: 12) {
+            if pickingOrigin {
+                originPickerBar
+            }
+
             searchBar
 
             if let errorText {
@@ -139,7 +158,7 @@ struct ContentView: View {
                 routeCard(selected, route)
             }
 
-            if !favorites.items.isEmpty && results.isEmpty && route == nil {
+            if !favorites.items.isEmpty && results.isEmpty && route == nil && !pickingOrigin {
                 favoritesRow
             }
         }
@@ -153,11 +172,35 @@ struct ContentView: View {
         .padding(.bottom, 6)
     }
 
+    private var originPickerBar: some View {
+        HStack {
+            Label("Đang chọn điểm xuất phát", systemImage: "smallcircle.filled.circle")
+                .font(.caption)
+                .foregroundStyle(.green)
+            Spacer()
+            Button("Vị trí của tôi") {
+                origin = nil
+                pickingOrigin = false
+                query = ""
+                results = []
+                computeRoute()
+            }
+            .font(.caption)
+            Button("Huỷ") {
+                pickingOrigin = false
+                query = ""
+                results = []
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+        }
+    }
+
     private var searchBar: some View {
         HStack(spacing: 8) {
             Image(systemName: "magnifyingglass")
                 .foregroundStyle(.secondary)
-            TextField("Tìm địa điểm…", text: $query)
+            TextField(pickingOrigin ? "Tìm điểm xuất phát…" : "Tìm điểm đến…", text: $query)
                 .onSubmit(search)
                 .autocorrectionDisabled()
             if busy {
@@ -185,9 +228,9 @@ struct ContentView: View {
                         choose(place)
                     } label: {
                         HStack(spacing: 12) {
-                            Image(systemName: "mappin.circle.fill")
+                            Image(systemName: pickingOrigin ? "smallcircle.filled.circle" : "mappin.circle.fill")
                                 .font(.title3)
-                                .foregroundStyle(.red)
+                                .foregroundStyle(pickingOrigin ? .green : .red)
                             VStack(alignment: .leading, spacing: 1) {
                                 Text(place.name)
                                     .foregroundStyle(.primary)
@@ -209,13 +252,51 @@ struct ContentView: View {
 
     private func routeCard(_ place: Place, _ route: Route) -> some View {
         VStack(spacing: 12) {
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(place.name).font(.headline)
-                    Text("\(formatDistance(Double(route.distanceMeters))) · \(max(1, route.durationSeconds / 60)) phút · \(route.steps.count) đoạn")
+            // Điểm đi → điểm đến, bấm dòng đi để đổi
+            VStack(spacing: 6) {
+                HStack(spacing: 8) {
+                    Image(systemName: "smallcircle.filled.circle")
+                        .foregroundStyle(.green)
+                    Button {
+                        pickingOrigin = true
+                        results = []
+                        query = ""
+                    } label: {
+                        Text(origin?.name ?? "Vị trí của tôi")
+                            .font(.subheadline)
+                            .foregroundStyle(.primary)
+                            .underline(origin == nil, color: .clear)
+                    }
+                    if origin != nil {
+                        Button {
+                            origin = nil
+                            computeRoute()
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    Spacer()
+                    Text("đổi")
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(.blue)
                 }
+                HStack(spacing: 8) {
+                    Image(systemName: "mappin.circle.fill")
+                        .foregroundStyle(.red)
+                    Text(place.name)
+                        .font(.subheadline.bold())
+                    Spacer()
+                }
+            }
+            .padding(10)
+            .background(RoundedRectangle(cornerRadius: 12).fill(.gray.opacity(0.1)))
+
+            HStack {
+                Text("\(formatDistance(Double(route.distanceMeters))) · \(max(1, route.durationSeconds / 60)) phút · \(route.steps.count) đoạn")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 Spacer()
                 Button {
                     if favorites.isSaved(place) {
@@ -226,18 +307,18 @@ struct ContentView: View {
                     }
                 } label: {
                     Image(systemName: favorites.isSaved(place) ? "star.fill" : "star")
-                        .font(.title2)
+                        .font(.title3)
                         .foregroundStyle(.yellow)
                 }
                 Button {
-                    self.route = nil
-                    self.selected = nil
+                    clearRoute()
                 } label: {
                     Image(systemName: "xmark.circle.fill")
-                        .font(.title2)
+                        .font(.title3)
                         .foregroundStyle(.secondary)
                 }
             }
+
             Button {
                 startNavigation(to: place, route: route)
             } label: {
@@ -289,8 +370,6 @@ struct ContentView: View {
     private func search() {
         errorText = nil
         results = []
-        selected = nil
-        route = nil
         let text = query.trimmingCharacters(in: .whitespaces)
         guard !text.isEmpty else { return }
         busy = true
@@ -306,10 +385,24 @@ struct ContentView: View {
     }
 
     private func choose(_ place: Place) {
-        selected = place
         results = []
         errorText = nil
-        guard let here = engine.lastLocation else {
+        query = ""
+        if pickingOrigin {
+            origin = place
+            pickingOrigin = false
+        } else {
+            selected = place
+        }
+        computeRoute()
+    }
+
+    /// Tính đường từ điểm xuất phát (mặc định: vị trí hiện tại) tới điểm đến.
+    private func computeRoute() {
+        guard let dest = selected else { return }
+        route = nil
+        let from = origin?.coordinate ?? engine.lastLocation
+        guard let from else {
             errorText = "Chưa bắt được GPS — ra chỗ thoáng, đợi vài giây rồi chọn lại."
             selected = nil
             return
@@ -318,11 +411,10 @@ struct ContentView: View {
         Task {
             defer { busy = false }
             do {
-                route = try await api.computeRoute(from: here, to: place.coordinate)
-                camera = .automatic // khung nhìn ôm trọn tuyến vừa vẽ
+                route = try await api.computeRoute(from: from, to: dest.coordinate)
+                camera = .automatic // khung nhìn ôm trọn tuyến
             } catch {
                 errorText = error.localizedDescription
-                selected = nil
             }
         }
     }
@@ -334,6 +426,18 @@ struct ContentView: View {
         }
         camera = .userLocation(fallback: .automatic) // bám theo mình khi chạy
         engine.start(route: route)
+    }
+
+    private func clearRoute() {
+        route = nil
+        selected = nil
+        origin = nil
+        pickingOrigin = false
+    }
+
+    private func stopEverything() {
+        engine.stop()
+        clearRoute()
     }
 }
 
