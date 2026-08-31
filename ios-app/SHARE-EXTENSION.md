@@ -17,21 +17,20 @@ bình thường nếu bạn bỏ qua phần này.
 
 Extension gọi app chính qua địa chỉ `mapsnoti://`. Phải khai thì iOS mới cho.
 
-Chọn project → TARGETS **MapsNoti** → tab **Info** → mục *URL Types* (kéo xuống
-gần cuối, có nút `+`):
+Chọn project → TARGETS **MapsNoti** → tab **Info**.
 
-- Bấm `+`
+Tab Info có nhiều mục xếp dọc. Trên cùng là bảng *Custom iOS Target Properties*
+(chỗ thêm privacy key hôm trước). **Kéo xuống dưới bảng đó**, qua *Document
+Types*, *Exported/Imported Type Identifiers*, tới mục **URL Types** — mục riêng,
+không nằm trong bảng trên. Bung mũi tên ra, bấm `+`:
+
 - **Identifier**: `com.hoangduy.MapsNoti` (hoặc bundle id của bạn)
 - **URL Schemes**: `mapsnoti`   ← gõ chính xác, viết thường, không có `://`
 
-## Bước 2 — Cho app chính biết Google Maps tồn tại
+Đây là bước duy nhất phải làm trên target **MapsNoti**; các bước sau đều thao
+tác trên target extension.
 
-Vẫn ở tab **Info**, chuột phải → **Add Row** → gõ:
-
-- Key: `LSApplicationQueriesSchemes` (kiểu **Array**)
-- Bung mũi tên ra, bấm `+` thêm 1 item, value: `comgooglemaps`
-
-## Bước 3 — Tạo target Share Extension
+## Bước 2 — Tạo target Share Extension
 
 1. Menu **File → New → Target…**
 2. Chọn iOS → **Share Extension** → Next
@@ -43,14 +42,14 @@ Vẫn ở tab **Info**, chuột phải → **Add Row** → gõ:
 Xcode đẻ ra thư mục `ShareToMapsNoti` gồm `ShareViewController.swift`,
 `MainInterface.storyboard`, `Info.plist`.
 
-## Bước 4 — Thay code extension
+## Bước 3 — Thay code extension
 
 1. **Xoá `MainInterface.storyboard`** — chọn file → chuột phải → Delete →
    **Move to Trash**. (Bản mình viết không dùng storyboard.)
 2. Mở `ShareToMapsNoti/ShareViewController.swift` → `⌘A` → dán đè bằng nội dung
    `ios-app/share-extension/ShareViewController.swift`.
 
-## Bước 5 — Sửa Info.plist của extension
+## Bước 4 — Sửa Info.plist của extension
 
 Mở `ShareToMapsNoti/Info.plist`. Cần khớp với file
 `ios-app/share-extension/Info-share-extension.plist`, cụ thể trong khối
@@ -70,12 +69,12 @@ Và trong `NSExtensionAttributes → NSExtensionActivationRule`, đổi từ chu
 > Xem plist dạng chữ cho dễ: chuột phải file Info.plist → **Open As → Source
 > Code**, rồi chép thẳng khối `NSExtension` từ file mẫu của mình sang.
 
-## Bước 6 — Ký extension
+## Bước 5 — Ký extension
 
 Chọn project → TARGETS **ShareToMapsNoti** → tab **Signing & Capabilities** →
 tick *Automatically manage signing* → Team chọn **Personal Team** giống app chính.
 
-## Bước 7 — Chạy
+## Bước 6 — Chạy
 
 Chọn scheme **MapsNoti** (không phải ShareToMapsNoti) ở thanh trên → chọn iPhone
 → `⌘R`.
