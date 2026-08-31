@@ -33,14 +33,14 @@ enum PlaceLink {
 
         // 1. Toạ độ dán trần: "10.8231, 106.6297"
         if let c = plainCoordinate(text) {
-            return Place(name: "Điểm đã ghim", address: coordText(c), coordinate: c)
+            return await polished(Place(name: "Điểm đã ghim", address: coordText(c), coordinate: c))
         }
 
         guard let url = firstURL(in: text) else { throw LinkError.notRecognized }
 
         // 2. Toạ độ nằm ngay trong URL gốc thì khỏi tốn mạng.
         if let place = placeFromURLString(url.absoluteString) {
-            return place
+            return await polished(place)
         }
 
         // 3. Tải trang (link rút gọn sẽ tự đi theo redirect) rồi soi cả
@@ -48,10 +48,10 @@ enum PlaceLink {
         let (finalURL, body) = try await fetch(url)
 
         if let place = placeFromURLString(finalURL.absoluteString) {
-            return place
+            return await polished(place)
         }
         if let place = placeFromHTML(body, url: finalURL) {
-            return place
+            return await polished(place)
         }
 
         // 4. Còn mỗi cái tên → nhờ Apple định vị.
@@ -119,6 +119,28 @@ enum PlaceLink {
         let clean = title.trimmingCharacters(in: .whitespaces)
         if clean.isEmpty || clean.lowercased() == "google maps" { return nil }
         return clean
+    }
+
+    // MARK: - Đặt tên tử tế cho điểm chỉ có toạ độ
+
+    /// Link kiểu ?q=lat,lng không mang tên chỗ — tra ngược toạ độ ra tên
+    /// đường/địa chỉ cho dễ nhìn thay vì chữ chung chung.
+    private static func polished(_ place: Place) async -> Place {
+        let generic = ["Điểm từ Google Maps", "Điểm đã ghim"]
+        guard generic.contains(place.name) else { return place }
+
+        let location = CLLocation(latitude: place.coordinate.latitude,
+                                  longitude: place.coordinate.longitude)
+        guard let mark = try? await CLGeocoder().reverseGeocodeLocation(location).first else {
+            return place
+        }
+        let name = mark.name ?? mark.thoroughfare ?? place.name
+        let address = [mark.subAdministrativeArea, mark.administrativeArea]
+            .compactMap { $0 }
+            .joined(separator: ", ")
+        return Place(name: name,
+                     address: address.isEmpty ? place.address : address,
+                     coordinate: place.coordinate)
     }
 
     // MARK: - Tải trang

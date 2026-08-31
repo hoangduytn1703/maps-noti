@@ -97,3 +97,33 @@ bấm → MapsNoti mở ra với đường đã vẽ.
 > Tài khoản Apple miễn phí: app + extension tính là **2 App ID**, mà mỗi tuần
 > chỉ được cấp 3. Nếu Xcode báo hết quota App ID thì xoá bớt app thử nghiệm cũ
 > (NotiSmokeTest chẳng hạn) rồi thử lại.
+
+---
+
+## Cách B — Phím tắt (Shortcuts): bấm là CHUYỂN APP LUÔN, không cần code
+
+iOS chặn share extension tự mở app chính, nhưng **Phím tắt thì được phép mở
+app**. Tạo một phím tắt nhận link từ bảng Chia sẻ rồi mở `mapsnoti://` —
+2 phút, không đụng Xcode:
+
+1. Mở app **Phím tắt** (Shortcuts) có sẵn trên iPhone → tab **Phím tắt** → **+**
+2. Đặt tên: `Đi bằng MapsNoti`
+3. Bấm nút **ⓘ** (thông tin) dưới đáy → bật **Hiện trong bảng chia sẻ**
+   (*Show in Share Sheet*) → mục *Nhận* (Receive) chọn **URL** và **Văn bản** → Xong
+4. Thêm hành động 1: tìm **"Mã hóa URL"** (*URL Encode*) → nó tự nhận
+   đầu vào là *Đầu vào phím tắt* (Shortcut Input)
+5. Thêm hành động 2: tìm **"Mở URL"** (*Open URLs*) → bấm vào ô URL, gõ:
+
+   ```
+   mapsnoti://route?link=
+   ```
+
+   rồi ngay sau dấu `=` chọn biến **Văn bản được mã hóa URL** (kết quả của
+   hành động 1) từ thanh gợi ý biến phía trên bàn phím
+6. Xong. Thử: Google Maps → **Chia sẻ** → kéo xuống danh sách hành động →
+   bấm **Đi bằng MapsNoti** → MapsNoti bật lên với đường vẽ sẵn
+
+> Lần đầu chạy iOS hỏi "Cho phép mở MapsNoti?" → Luôn cho phép.
+>
+> Có cách B rồi thì extension ShareToMapsNoti thành dự phòng (nó vẫn chép
+> link vào clipboard để nút Dán sáng xanh) — giữ hay xoá target đều được.
