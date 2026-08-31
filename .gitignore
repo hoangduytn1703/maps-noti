@@ -23,6 +23,3 @@ xcuserdata/
 # Đừng bao giờ commit, repo public là lộ.
 Secrets.xcconfig
 *.env
-
-# Clone lồng nhau tạo nhầm lúc setup repo — thư mục rỗng, xoá được.
-/maps-noti/
