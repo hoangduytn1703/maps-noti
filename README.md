@@ -16,9 +16,10 @@ Chạy trên máy thật ngày 31/08/2026. Chi tiết bài test ở [ios-smokete
 | iPhone khoá, nằm trong túi, đồng hồ có rung? | ✅ **Có** |
 | Độ trễ | ✅ **~1 giây** |
 | Tiếng Việt có dấu | ✅ Hiển thị đúng |
-| Nhiều noti liên tiếp có bị gộp? | ⏳ chưa đo |
+| Nhiều noti liên tiếp có bị gộp? | ✅ **Không** — 5/5 lần rung, tới nhau ngay |
 | Do Not Disturb có chặn? | ⏳ chưa đo |
-| Ký tự mũi tên `↰ ↱ ↑` | ⏳ chưa đo |
+| Emoji (🏁) | ✅ Hiển thị được |
+| Ký tự mũi tên `↰ ↱ ↑` | ⏳ chưa xác nhận |
 | Chuỗi dài cắt ở đâu | ⏳ chưa đo |
 
 **Kết luận: hướng này chạy được.** Huawei không chặn app ngoài App Store, và độ
