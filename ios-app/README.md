@@ -68,3 +68,19 @@ Tab **Signing & Capabilities** → nút **+ Capability** (góc trên trái) → 
 - MapKit không có chế độ xe máy — đường tính theo ô tô, đôi khi đi vòng hơn
   đường xe máy quen chạy. Muốn chuẩn xe máy thì chờ cứu tài khoản Google.
 - Chưa có: giọng nói, bản đồ trên màn hình, lưu lịch sử, chọn nhiều route.
+
+## Chạy app mà không dính debugger
+
+Mặc định `⌘R` gắn debugger vào app — rút cáp là app đứng, lỡ có breakpoint thì
+app treo giữa chừng. Tắt đi:
+
+`Product → Scheme → Edit Scheme…` (`⌘<`) → chọn **Run** → tab **Info**:
+
+- Bỏ tick **Debug executable**
+- Build Configuration: `Debug` → **Release** (nhanh hơn, đỡ tốn pin)
+
+Thêm `⌘Y` để tắt toàn bộ breakpoint.
+
+Sau khi app đã cài, **không cần `⌘R` nữa** — mở thẳng từ màn hình chính iPhone.
+Chỉ cắm cáp lại khi có code mới, hoặc mỗi 7 ngày để gia hạn chữ ký (giới hạn
+của tài khoản Apple miễn phí).
