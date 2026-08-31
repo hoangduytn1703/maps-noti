@@ -42,7 +42,8 @@ enum PlaceLink {
         }
 
         let full = url.absoluteString
-        let name = placeName(from: url) ?? "Điểm từ Google Maps"
+        let realName = placeName(from: url)
+        let name = realName ?? "Điểm từ Google Maps"
 
         // 4. Toạ độ CHÍNH XÁC của địa điểm nằm ở !3d<lat>!4d<lng>.
         if let c = match(full, #"!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)"#) {
@@ -57,9 +58,11 @@ enum PlaceLink {
             return Place(name: name, address: coordText(c), coordinate: c)
         }
 
-        // 7. Link không mang toạ độ (dạng place-id): lấy TÊN từ link rồi
-        //    nhờ Apple định vị. Vẫn hưởng được khả năng tìm kiếm của Google.
-        if let resolved = try? await AppleAPI().searchPlaces(name, near: nil).first {
+        // 7. Link không mang toạ độ (dạng place-id): lấy TÊN từ link rồi nhờ
+        //    Apple định vị. CHỈ khi moi được tên thật — không thì thà báo lỗi
+        //    còn hơn đi tìm chuỗi mặc định rồi ra một chỗ ngẫu nhiên.
+        if let realName,
+           let resolved = try? await AppleAPI().searchPlaces(realName, near: nil).first {
             return resolved
         }
         throw LinkError.notRecognized
@@ -97,7 +100,15 @@ enum PlaceLink {
                 return url
             }
         }
-        return URL(string: text)
+        // Chuỗi trần chỉ được tính là link khi là URL web thật —
+        // "abc" cũng parse ra URL được nên phải chặn ở đây.
+        if let url = URL(string: text),
+           let scheme = url.scheme?.lowercased(),
+           scheme == "http" || scheme == "https",
+           url.host != nil {
+            return url
+        }
+        return nil
     }
 
     /// Tên địa điểm nằm giữa /place/ và đoạn tiếp theo: .../maps/place/Mị+Coffee/@...
