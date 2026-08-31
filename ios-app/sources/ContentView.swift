@@ -265,7 +265,7 @@ struct ContentView: View {
                 guard let first = items.first else { return }
                 Task { @MainActor in handlePasted(first) }
             }
-            .labelStyle(clipboardHasLink ? .titleAndIcon : .iconOnly)
+            .labelStyle(.iconOnly)
             .buttonBorderShape(.capsule)
             .tint(.blue)
 
