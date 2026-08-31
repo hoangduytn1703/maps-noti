@@ -1,11 +1,12 @@
 import Combine
-import SwiftUI
 import CoreLocation
 import Foundation
 
-/// Một địa điểm yêu thích — bản Codable của Place để cất vào UserDefaults.
+/// Một địa điểm yêu thích. `label` là tên gợi nhớ do người dùng đặt
+/// ("Nhà", "Công ty"…) — để trống cũng được, khi đó hiện tên gốc.
 struct FavoritePlace: Codable, Identifiable, Equatable {
     var id = UUID()
+    var label: String?
     let name: String
     let address: String
     let latitude: Double
@@ -15,6 +16,25 @@ struct FavoritePlace: Codable, Identifiable, Equatable {
         Place(name: name,
               address: address,
               coordinate: CLLocationCoordinate2D(latitude: latitude, longitude: longitude))
+    }
+
+    /// Tên hiện ra ngoài: ưu tiên label, không có thì tên gốc.
+    var displayTitle: String {
+        if let label, !label.isEmpty { return label }
+        return name
+    }
+
+    /// Icon theo tên gợi nhớ: nhà ra hình nhà, công ty ra cặp táp, còn lại ngôi sao.
+    var iconName: String {
+        let t = (label ?? "").lowercased()
+        if t.contains("nhà") || t.contains("home") { return "house.fill" }
+        if t.contains("công ty") || t.contains("cty") || t.contains("văn phòng")
+            || t.contains("làm") || t.contains("work") || t.contains("office") {
+            return "briefcase.fill"
+        }
+        if t.contains("trường") || t.contains("school") { return "graduationcap.fill" }
+        if t.contains("gym") || t.contains("tập") { return "dumbbell.fill" }
+        return "star.fill"
     }
 }
 
@@ -37,22 +57,25 @@ final class FavoritesStore: ObservableObject {
         items.contains { same($0, place) }
     }
 
-    /// Chưa có thì thêm, có rồi thì bỏ.
-    func toggle(_ place: Place) {
-        if let i = items.firstIndex(where: { same($0, place) }) {
-            items.remove(at: i)
-        } else {
-            items.insert(FavoritePlace(name: place.name,
-                                       address: place.address,
-                                       latitude: place.coordinate.latitude,
-                                       longitude: place.coordinate.longitude),
-                         at: 0)
-        }
+    func add(_ place: Place, label: String) {
+        guard !isSaved(place) else { return }
+        let trimmed = label.trimmingCharacters(in: .whitespaces)
+        items.insert(FavoritePlace(label: trimmed.isEmpty ? nil : trimmed,
+                                   name: place.name,
+                                   address: place.address,
+                                   latitude: place.coordinate.latitude,
+                                   longitude: place.coordinate.longitude),
+                     at: 0)
         save()
     }
 
-    func remove(atOffsets offsets: IndexSet) {
-        items.remove(atOffsets: offsets)
+    func remove(_ place: Place) {
+        items.removeAll { same($0, place) }
+        save()
+    }
+
+    func remove(id: UUID) {
+        items.removeAll { $0.id == id }
         save()
     }
 

@@ -15,16 +15,24 @@ final class NavigationEngine: NSObject, ObservableObject {
 
     struct Announcement {
         let coordinate: CLLocationCoordinate2D
-        let glyph: String
-        let word: String        // "Rẽ trái" — luôn tự đủ nghĩa, không dựa vào emoji
-        let instruction: String // câu đầy đủ từ Google
+        let glyph: String       // emoji cho notification
+        let symbol: String      // SF Symbol cho banner trên màn hình
+        let word: String        // "Rẽ trái" — luôn tự đủ nghĩa
+        let instruction: String // câu đầy đủ
         let isArrival: Bool
     }
 
     @Published private(set) var isNavigating = false
-    @Published private(set) var statusLine = "—"
     @Published private(set) var lastLocation: CLLocationCoordinate2D?
     @Published private(set) var log: [String] = []
+
+    // Trạng thái cho banner kiểu Apple Maps
+    @Published private(set) var nextSymbol = "arrow.up"
+    @Published private(set) var nextWord = ""
+    @Published private(set) var nextDistanceText = ""
+    @Published private(set) var nextInstruction = ""
+    /// Tuyến đang chạy — ContentView vẽ lên bản đồ, tự cập nhật khi reroute.
+    @Published private(set) var activePolyline: [CLLocationCoordinate2D] = []
 
     /// ContentView gắn vào Notifier.
     var notify: (String, String) -> Void = { _, _ in }
@@ -62,6 +70,7 @@ final class NavigationEngine: NSObject, ObservableObject {
     func start(route: Route) {
         buildAnnouncements(from: route)
         routePoints = route.polyline
+        activePolyline = route.polyline
         index = 0
         firedFar = false
         firedNear = false
@@ -84,7 +93,11 @@ final class NavigationEngine: NSObject, ObservableObject {
     func stop(silent: Bool = false) {
         isNavigating = false
         manager.allowsBackgroundLocationUpdates = false
-        statusLine = "—"
+        activePolyline = []
+        nextWord = ""
+        nextDistanceText = ""
+        nextInstruction = ""
+        nextSymbol = "arrow.up"
         if !silent {
             notify("⏹ Đã dừng chỉ đường", "Tắt theo yêu cầu")
             append("⏹ dừng")
@@ -102,6 +115,7 @@ final class NavigationEngine: NSObject, ObservableObject {
                 let next = steps[k + 1]
                 list.append(Announcement(coordinate: steps[k].endCoordinate,
                                          glyph: Maneuver.glyph(next.maneuver),
+                                         symbol: Maneuver.symbol(next.maneuver),
                                          word: Maneuver.word(next.maneuver),
                                          instruction: next.instruction,
                                          isArrival: false))
@@ -110,6 +124,7 @@ final class NavigationEngine: NSObject, ObservableObject {
         if let last = steps.last {
             list.append(Announcement(coordinate: last.endCoordinate,
                                      glyph: "🏁",
+                                     symbol: "flag.checkered",
                                      word: "Đã tới nơi",
                                      instruction: "Điểm đến ở gần đây",
                                      isArrival: true))
@@ -121,6 +136,7 @@ final class NavigationEngine: NSObject, ObservableObject {
     private func apply(route: Route) {
         buildAnnouncements(from: route)
         routePoints = route.polyline
+        activePolyline = route.polyline
         index = 0
         firedFar = false
         firedNear = false
@@ -138,7 +154,11 @@ final class NavigationEngine: NSObject, ObservableObject {
 
         let target = announcements[index]
         let d = location.coordinate.distance(to: target.coordinate)
-        statusLine = "\(target.glyph) \(target.word) — còn \(formatDistance(d))"
+
+        nextSymbol = target.symbol
+        nextWord = target.word
+        nextDistanceText = formatDistance(d)
+        nextInstruction = target.instruction
 
         if target.isArrival {
             if d < 45 {

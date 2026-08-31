@@ -1,7 +1,7 @@
 import CoreLocation
 import Foundation
 
-// MARK: - Địa điểm tìm được từ Places API
+// MARK: - Địa điểm tìm được
 
 struct Place: Identifiable {
     let id = UUID()
@@ -10,7 +10,7 @@ struct Place: Identifiable {
     let coordinate: CLLocationCoordinate2D
 }
 
-// MARK: - Lộ trình từ Routes API
+// MARK: - Lộ trình
 
 struct RouteStep {
     /// Câu lệnh đầy đủ tiếng Việt, mô tả việc cần làm Ở ĐẦU đoạn này,
@@ -27,14 +27,14 @@ struct Route {
     let distanceMeters: Int
     let durationSeconds: Int
     let steps: [RouteStep]
-    /// Toàn tuyến, đã giải mã — dùng để phát hiện lệch đường.
+    /// Toàn tuyến, đã giải mã — vẽ lên bản đồ + phát hiện lệch đường.
     let polyline: [CLLocationCoordinate2D]
 }
 
-// MARK: - Maneuver → emoji + chữ ngắn
+// MARK: - Maneuver → emoji / chữ / SF Symbol
 
 enum Maneuver {
-    /// Emoji chỉ là trang trí — GT4 lúc hiện lúc nuốt, chữ phải luôn tự đủ nghĩa.
+    /// Emoji cho notification — GT4 lúc hiện lúc nuốt, chữ phải luôn tự đủ nghĩa.
     static func glyph(_ m: String) -> String {
         switch m {
         case "TURN_LEFT", "TURN_SLIGHT_LEFT", "TURN_SHARP_LEFT", "RAMP_LEFT", "FORK_LEFT":
@@ -71,6 +71,28 @@ enum Maneuver {
         default:                     return "Chú ý"
         }
     }
+
+    /// SF Symbol cho banner trên màn hình (kiểu Apple Maps).
+    static func symbol(_ m: String) -> String {
+        switch m {
+        case "TURN_LEFT", "TURN_SHARP_LEFT":
+            return "arrow.turn.up.left"
+        case "TURN_SLIGHT_LEFT", "FORK_LEFT", "RAMP_LEFT":
+            return "arrow.up.left"
+        case "TURN_RIGHT", "TURN_SHARP_RIGHT":
+            return "arrow.turn.up.right"
+        case "TURN_SLIGHT_RIGHT", "FORK_RIGHT", "RAMP_RIGHT":
+            return "arrow.up.right"
+        case "UTURN_LEFT", "UTURN_RIGHT":
+            return "arrow.uturn.left"
+        case "ROUNDABOUT_LEFT", "ROUNDABOUT_RIGHT":
+            return "arrow.triangle.2.circlepath"
+        case "MERGE":
+            return "arrow.merge"
+        default:
+            return "arrow.up"
+        }
+    }
 }
 
 // MARK: - Tiện ích
@@ -89,7 +111,7 @@ func formatDistance(_ meters: Double) -> String {
     return String(format: "%.1f km", meters / 1000).replacingOccurrences(of: ".", with: ",")
 }
 
-// MARK: - Giải mã encoded polyline của Google
+// MARK: - Giải mã encoded polyline của Google (dùng cho phase 2)
 
 enum Polyline {
     static func decode(_ encoded: String) -> [CLLocationCoordinate2D] {
