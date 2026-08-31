@@ -36,3 +36,12 @@ khoảng 12 m).
   vô thời hạn khi bỏ túi
 - **Bắn noti** — tính khoảng cách tới maneuver kế tiếp, bắn ở các mốc cố định
 - **Lệch đường** — cách polyline quá xa trong vài update liên tiếp thì gọi lại route
+
+## Lộ trình
+
+- [x] Smoke test GT4 nhận noti
+- [x] App chính: tìm chỗ, route Apple Maps, GPS nền, noti từng ngã rẽ, reroute
+- [x] Lưu địa điểm yêu thích
+- [x] Icon app ([ios-app/assets/AppIcon-1024.png](ios-app/assets/AppIcon-1024.png))
+- [ ] **Phase 2**: nguồn route Google (Routes API, chế độ xe máy) — chờ tài khoản Google Cloud sống lại
+- [ ] Ý tưởng thêm: chọn điểm trên bản đồ, share từ app khác, giọng nói

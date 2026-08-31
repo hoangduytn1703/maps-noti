@@ -4,6 +4,7 @@ import SwiftUI
 struct ContentView: View {
     @StateObject private var engine = NavigationEngine()
     @StateObject private var notifier = Notifier()
+    @StateObject private var favorites = FavoritesStore()
 
     @State private var query = ""
     @State private var results: [Place] = []
@@ -24,6 +25,7 @@ struct ContentView: View {
                     if let selected, let route {
                         routeSection(selected, route)
                     }
+                    favoritesSection
                 }
 
                 if let errorText {
@@ -140,6 +142,12 @@ struct ContentView: View {
                     .font(.caption).foregroundStyle(.secondary)
             }
             Button {
+                favorites.toggle(place)
+            } label: {
+                Label(favorites.isSaved(place) ? "Đã lưu yêu thích — bấm để bỏ" : "Lưu yêu thích",
+                      systemImage: favorites.isSaved(place) ? "star.fill" : "star")
+            }
+            Button {
                 startNavigation(to: place, route: route)
             } label: {
                 Text("Bắt đầu — rồi khoá máy bỏ túi")
@@ -155,6 +163,35 @@ struct ContentView: View {
             try? await api.computeRoute(from: here, to: dest)
         }
         engine.start(route: route)
+    }
+
+    // MARK: - Yêu thích
+
+    @ViewBuilder
+    private var favoritesSection: some View {
+        if !favorites.items.isEmpty {
+            Section {
+                ForEach(favorites.items) { fav in
+                    Button {
+                        choose(fav.place)
+                    } label: {
+                        HStack {
+                            Image(systemName: "star.fill")
+                                .foregroundStyle(.yellow)
+                            VStack(alignment: .leading) {
+                                Text(fav.name)
+                                Text(fav.address).font(.caption).foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                }
+                .onDelete { favorites.remove(atOffsets: $0) }
+            } header: {
+                Text("Yêu thích")
+            } footer: {
+                Text("Bấm để đi tới đó luôn. Vuốt trái để xoá.")
+            }
+        }
     }
 
     // MARK: - Nhật ký
