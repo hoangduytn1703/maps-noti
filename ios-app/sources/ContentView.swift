@@ -29,6 +29,10 @@ struct ContentView: View {
             mapLayer
                 .ignoresSafeArea()
 
+            if !engine.isNavigating {
+                mapControlsOverlay
+            }
+
             if engine.isNavigating {
                 navigationOverlay
             } else {
@@ -36,17 +40,6 @@ struct ContentView: View {
             }
         }
         .mapScope(mapScope)
-        .overlay(alignment: .topTrailing) {
-            // Nút vị trí + la bàn: tự đặt để không dính sát mép trên.
-            if !engine.isNavigating {
-                VStack(spacing: 10) {
-                    MapUserLocationButton(scope: mapScope)
-                    MapCompass(scope: mapScope)
-                }
-                .padding(.top, 72)
-                .padding(.trailing, 14)
-            }
-        }
         .task {
             await notifier.requestPermission()
             engine.requestPermission()
@@ -88,6 +81,23 @@ struct ContentView: View {
             if let selected {
                 Marker(selected.name, coordinate: selected.coordinate)
             }
+        }
+    }
+
+    /// Nút vị trí + la bàn. Phải nằm TRONG cây view có .mapScope thì mới
+    /// nối được với Map — treo ngoài overlay là SwiftUI hỏng render.
+    private var mapControlsOverlay: some View {
+        VStack {
+            HStack {
+                Spacer()
+                VStack(spacing: 10) {
+                    MapUserLocationButton(scope: mapScope)
+                    MapCompass(scope: mapScope)
+                }
+                .padding(.top, 72)
+                .padding(.trailing, 14)
+            }
+            Spacer()
         }
     }
 
