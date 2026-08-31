@@ -1,0 +1,6 @@
+# Repo này làm việc trên cả Windows lẫn macOS. Chuẩn hoá xuống LF trong repo
+# để không sinh diff giả toàn file mỗi lần đổi máy.
+* text=auto eol=lf
+
+# File project của Xcode: giữ nguyên byte, đừng để git tự ý sửa dòng.
+*.pbxproj -text

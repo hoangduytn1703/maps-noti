@@ -1,0 +1,28 @@
+# macOS
+.DS_Store
+
+# Xcode — build output
+build/
+DerivedData/
+*.hmap
+*.ipa
+*.dSYM
+*.dSYM.zip
+
+# Xcode — thiết lập riêng của từng máy, không nên commit
+xcuserdata/
+*.xcuserstate
+*.xcscmblueprint
+*.xccheckout
+
+# Swift Package Manager
+.build/
+.swiftpm/
+
+# Khoá bí mật — API key Google Directions của app chính sẽ nằm ở đây.
+# Đừng bao giờ commit, repo public là lộ.
+Secrets.xcconfig
+*.env
+
+# Clone lồng nhau tạo nhầm lúc setup repo — thư mục rỗng, xoá được.
+/maps-noti/
